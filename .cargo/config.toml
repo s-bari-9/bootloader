@@ -1,0 +1,6 @@
+[build]
+target = "x86_64-unknown-uefi"
+
+[target.x86_64-unknown-uefi]
+runner = "extra/efirunner.sh"
+linker = "rust-lld"

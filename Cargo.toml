@@ -1,0 +1,19 @@
+[package]
+name = "bootloader"
+version = "0.0.1"
+edition = "2024"
+default-run = "bootloader"
+
+[dependencies]
+#uefi = "0.35.0"
+#uefi-services = "0.26"
+
+[dependencies.uefi]
+version = "0.35.0"
+features = ["panic_handler", "alloc", "global_allocator"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
