@@ -26,28 +26,7 @@ fn main() -> Status {
     
     println!("BOOTX64.EFI: Starting bootloader...");
     print_image_path().unwrap();
-    //let kernel_path = "EFI\\BOOT/KERNEL.EFI";
-    // Load and execute KERNEL.EFI
-    /*
-    match load_kernel_from_path(kernel_path) {
-        Ok(_) => {
-            println!("BOOTX64.EFI: Kernel loaded successfully, but returned unexpectedly");
-        }
-        Err(e) => {
-            println!("BOOTX64.EFI: Failed to load kernel from {}: {:?}", kernel_path, e.status());
-        }
-    }*/
-    //load_kernel().expect("Fail");
     println!("\n\n");
-    //let x = read_loader_entries();
-    /*match x {
-        Ok(a) => {
-            println!("BOOTX64.EFI: Kernel loaded successfully {:#?}", a);
-        }
-        Err(e) => {
-            println!("BOOTX64.EFI: Failed to load kernel from {}", e.status());
-        }
-    };*/
     let handle = *boot::locate_handle_buffer(SearchType::ByProtocol(&Input::GUID))
         .unwrap()
         .first()
@@ -55,7 +34,7 @@ fn main() -> Status {
     let mut input = boot::open_protocol_exclusive::<Input>(handle).unwrap();
     let entries = read_loader_entries().unwrap();
 
-    if let core::prelude::v1::Ok(Some(selected)) = boot_menu(&entries, &mut input) {
+    if let Ok(Some(selected)) = boot_menu(&entries, &mut input) {
         load_efi_from_path(&selected).unwrap();
     }
     
