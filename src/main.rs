@@ -24,7 +24,7 @@ use uefi::{CStr16, Identify, Result};
 fn main() -> Status {
     uefi::helpers::init().unwrap();
 
-    println!("BOOTX64.EFI: Starting bootloader...");
+    println!("start");
     //print_image_path().unwrap();
     println!("\n\n");
     let handle = *boot::locate_handle_buffer(SearchType::ByProtocol(&Input::GUID))

@@ -1,7 +1,6 @@
 // memory.rs
 // UEFI to E820 memory map conversion for Linux kernel boot
-
-#![no_std]
+/*
 
 extern crate alloc;
 use alloc::vec::Vec;
@@ -242,4 +241,4 @@ mod tests {
         let entry = E820Entry::new(0x1000, 0x2000, E820Type::Ram);
         assert_eq!(entry.end(), 0x3000);
     }
-}
+}*/
