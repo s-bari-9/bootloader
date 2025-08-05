@@ -1,35 +1,36 @@
 # Rust UEFI Bootloader
 
-A UEFI bootloader (systemd-boot compatible(TODO))
+A UEFI bootloader (systemd-boot compatible(not yet!))
 
 ## Directory Structure
 
-Expected layout on the EFI System Partition (XBOOTLDR partition is **NOT** supported right now, so use a single ESP for now):
+Expected layout on the EFI System Partition (XBOOTLDR partition is **NOT** supported right now, so use a single ESP partition for now):
 
 ```
-/EFI/BOOT/BOOTX64.EFI         ← This bootloader
-/EFI/BOOT/KERNEL.EFI          ← Hello world file for testing bootloader
-/loader/loader.conf           ← Global config (TODO)
-/loader/entries/\*.conf       ← Per-entry configs(TODO)
+/EFI/BOOT/BOOTX64.EFI         <= This bootloader
+/EFI/BOOT/KERNEL.EFI          <= Hello world file for testing bootloader
+/loader/loader.conf           <= Global config (TODO)
+/loader/entries/*.conf       <= Per-entry configs
 ````
 
 Boot entries are supported as in [UAPI specifications](https://uapi-group.org/specifications/specs/boot_loader_specification/#type-1-boot-loader-specification-entries).
 
-Bootloader has been tested in qemu and can load a kernel from a hardcoded path right now.
 
 ## TODO
 
 
 * [X] Load UEFI executables
+* [-] Load non-EFI Linux kernels
 * [-] Support [bootloader entries](https://uapi-group.org/specifications/specs/boot_loader_specification/#type-1-boot-loader-specification-entries)
     * [x] Kernel files found in `/EFI/Linux/`
     * [x] UEFI shell `/shellx64.efi`
 * [-] Boot menu selection UI
-* [X] Windows/Apple chainloading
+* [X] Windows chainloading
+* [-] Apple chainloading (Just search in `EFI\Apple\Boot\boot.efi` for now)
 * [ ] XBOOTLDR partition support
 * [ ] Bootloader conf
-* [ ] Pass kernel options
-* [ ] Initrd loading
+* [-] Pass kernel options
+* [-] Initrd loading
 * [ ] ACPI and memory map handoff
 
 ## Extra

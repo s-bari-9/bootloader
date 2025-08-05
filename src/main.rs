@@ -2,8 +2,10 @@
 #![no_std]
 
 mod loader_entries;
+mod kernel_loader;
 mod boot_selector;
 extern crate alloc;
+use kernel_loader::load_kernel_image;
 use loader_entries::BootEntry;
 use loader_entries::read_loader_entries;
 use boot_selector::boot_menu;
@@ -25,7 +27,7 @@ fn main() -> Status {
     uefi::helpers::init().unwrap();
     
     println!("BOOTX64.EFI: Starting bootloader...");
-    print_image_path().unwrap();
+    //print_image_path().unwrap();
     println!("\n\n");
     let handle = *boot::locate_handle_buffer(SearchType::ByProtocol(&Input::GUID))
         .unwrap()
@@ -34,8 +36,14 @@ fn main() -> Status {
     let mut input = boot::open_protocol_exclusive::<Input>(handle).unwrap();
     let entries = read_loader_entries().unwrap();
 
-    if let Ok(Some(selected)) = boot_menu(&entries, &mut input) {
-        load_efi_from_path(&selected).unwrap();
+    if let Ok(Some(entry)) = boot_menu(&entries, &mut input) {
+        if let Some(path_linux) = entry.linux {
+            load_kernel_image(&path_linux, entry.initrd.as_deref(), entry.options.as_deref()).unwrap();
+        }
+        else if let Some(path_efi) = entry.efi {
+            load_efi_from_path(&path_efi).unwrap();
+        }
+        //load_efi_from_path(&selected).unwrap();
     }
     
     //boot::stall(100_000_000);
@@ -43,7 +51,7 @@ fn main() -> Status {
     //Status::SUCCESS
 }
 
-fn print_image_path() -> Result {
+/*fn print_image_path() -> Result {
     let loaded_image =
         boot::open_protocol_exclusive::<LoadedImage>(boot::image_handle())?;
     let device_path_to_text_handle = *boot::locate_handle_buffer(
@@ -65,7 +73,7 @@ fn print_image_path() -> Result {
         .expect("convert_device_path_to_text failed");
     println!("Image path: {:?}", &*image_device_path_text);
     Ok(())
-}
+}*/
 
 fn load_efi_from_path(kernel_path: &str) -> Result {
     // Get the loaded image protocol for the current image (BOOTX64.EFI)

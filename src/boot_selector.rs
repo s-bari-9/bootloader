@@ -1,10 +1,10 @@
-use alloc::vec::Vec;
-use alloc::string::String;
-use alloc::fmt::format;
-use uefi::proto::console::text::{Input, Key, Output, ScanCode};
-use uefi::{boot, Char16, Result, ResultExt, Identify};
 use crate::BootEntry; // adjust if needed
+use alloc::fmt::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 use uefi::boot::SearchType;
+use uefi::proto::console::text::{Input, Key, Output, ScanCode};
+use uefi::{Char16, Identify, Result, ResultExt, boot};
 //use core::fmt;
 use uefi::println;
 
@@ -66,7 +66,7 @@ fn clear() {
     loaded_image.clear().expect("err2");
 }
 
-pub fn boot_menu(entries: &Vec<BootEntry>, input: &mut Input) -> Result<Option<String>> {
+pub fn boot_menu(entries: &Vec<BootEntry>, input: &mut Input) -> Result<Option<BootEntry>> {
     if entries.is_empty() {
         println!("No boot entries found.");
         return Ok(None);
@@ -82,7 +82,14 @@ pub fn boot_menu(entries: &Vec<BootEntry>, input: &mut Input) -> Result<Option<S
 
         for (i, entry) in entries.iter().enumerate() {
             if i == selected {
-                println!("> {}{}", entry.title, entry.version.as_ref().map_or("".into(), |v| format(format_args!(" ({})", v))));
+                println!(
+                    "> {}{}",
+                    entry.title,
+                    entry
+                        .version
+                        .as_ref()
+                        .map_or("".into(), |v| format(format_args!(" ({})", v)))
+                );
                 if let Some(opts) = &entry.options {
                     println!("    {}", opts);
                 }
@@ -93,7 +100,7 @@ pub fn boot_menu(entries: &Vec<BootEntry>, input: &mut Input) -> Result<Option<S
 
         let mut events =// unsafe {
             [input.wait_for_key_event().unwrap()]
-        ;//};
+        ; //};
         boot::wait_for_event(&mut events).discard_errdata()?;
 
         if let Some(key) = input.read_key()? {
@@ -114,9 +121,16 @@ pub fn boot_menu(entries: &Vec<BootEntry>, input: &mut Input) -> Result<Option<S
                 }
                 Key::Printable(c) => {
                     if c == Char16::try_from('\r').unwrap() {
-                        let chosen = &entries[selected];
+                        let chosen = entries[selected].clone();
                         println!("\nSelected: {}", chosen.title);
-                        return Ok(Some(chosen.linux.clone().unwrap_or_else(|| chosen.efi.clone().unwrap())));
+                        /*return Ok(Some(if let Some(linux_path) = chosen.linux.clone() {
+                            (chosen, true) // true = kernel
+                        } else if let Some(efi_path) = chosen.efi.clone() {
+                            (efi_path, false) // false = efi
+                        } else {
+                            return Ok(None); // or handle error if neither exists
+                        }));*/
+                        return Ok(Some(chosen));
                     }
                 }
                 _ => {}
@@ -124,4 +138,3 @@ pub fn boot_menu(entries: &Vec<BootEntry>, input: &mut Input) -> Result<Option<S
         }
     }
 }
-
