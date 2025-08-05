@@ -15,12 +15,14 @@ Expected layout on the EFI System Partition (XBOOTLDR partition is **NOT** suppo
 
 Boot entries are supported as in [UAPI specifications](https://uapi-group.org/specifications/specs/boot_loader_specification/#type-1-boot-loader-specification-entries).
 
+> On EFI systems all Linux kernel images should be EFI images. In order to increase compatibility with EFI systems it is highly recommended only to install EFI kernel images, even on non-EFI systems, if that’s applicable and supported on the specific architecture.
+
 
 ## TODO
 
 
 * [X] Load UEFI executables
-* [-] Load non-EFI Linux kernels
+* [ ] Load non-EFI Linux kernels
 * [-] Support [bootloader entries](https://uapi-group.org/specifications/specs/boot_loader_specification/#type-1-boot-loader-specification-entries)
     * [x] Kernel files found in `/EFI/Linux/`
     * [x] UEFI shell `/shellx64.efi`
@@ -29,9 +31,8 @@ Boot entries are supported as in [UAPI specifications](https://uapi-group.org/sp
 * [-] Apple chainloading (Just search in `EFI\Apple\Boot\boot.efi` for now)
 * [ ] XBOOTLDR partition support
 * [ ] Bootloader conf
-* [-] Pass kernel options
-* [-] Initrd loading
-* [ ] ACPI and memory map handoff
+* [ ] Pass kernel options
+* [ ] Initrd loading
 
 ## Extra
 * [ ] Encrypted XBOOTLDR support

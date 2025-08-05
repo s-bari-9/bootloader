@@ -25,10 +25,18 @@ cp $(dirname "$TARGET_EFI")/kernel.efi "$ESP_DIR/KERNEL.EFI"
 #  -drive file="$ESP_IMG",format=raw,if=virtio \
 #  -nographic
 
+#qemu-system-x86_64 \
+#  -m 512M \
+#  -drive if=pflash,format=raw,file=extra/OVMF.fd \
+#  -drive file=fat:rw:esp,format=raw
 qemu-system-x86_64 \
-  -m 512M \
+  -m 1G \
+  -smp 2 \
+  -accel kvm \
+  -cpu host \
   -drive if=pflash,format=raw,file=extra/OVMF.fd \
-  -drive file=fat:rw:esp,format=raw
+  -drive if=virtio,format=qcow2,file=/var/lib/libvirt/images/archlinux-2.qcow2 \
+  -drive file=fat:rw:esp,format=raw,index=0,media=disk
 # Expose the host directory as a FAT drive
 #  -no-reboot \                                  # Prevents QEMU from rebooting on exit
 #  -nographic   
