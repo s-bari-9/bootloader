@@ -24,7 +24,7 @@ use uefi::{CStr16, Identify, Result};
 fn main() -> Status {
     uefi::helpers::init().unwrap();
 
-    println!("start");
+    println!("start ");
     //print_image_path().unwrap();
     println!("\n\n");
     let handle = *boot::locate_handle_buffer(SearchType::ByProtocol(&Input::GUID))
@@ -36,7 +36,7 @@ fn main() -> Status {
 
     if let Ok(Some(entry)) = boot_menu(&entries, &mut input) {
         if let Some(path_linux) = entry.linux {
-            load_efi_from_path(&path_linux, None, None).unwrap();
+            load_efi_from_path(&path_linux, entry.initrd.as_deref(), entry.options.as_deref()).unwrap();
         }
             /*match load_kernel_image(
                 &path_linux,

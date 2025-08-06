@@ -1,18 +1,23 @@
 // kernel_loader.rs
 // Loads a Linux bzImage and jumps to it from UEFI
 
-use uefi::{boot, Result};
-use uefi::proto::media::{fs::SimpleFileSystem, file::{File,FileMode,FileAttribute,FileType,FileInfo}};
-use uefi::proto::loaded_image::LoadedImage;
-use uefi::println;
-use uefi::CStr16;
+use alloc::borrow::ToOwned;
+use alloc::ffi::CString;
 use alloc::vec::Vec;
-
+use uefi::CStr16;
+use uefi::println;
+use uefi::proto::loaded_image::LoadedImage;
+use uefi::proto::media::{
+    file::{File, FileAttribute, FileInfo, FileMode, FileType},
+    fs::SimpleFileSystem,
+};
+use uefi::{Result, boot};
 
 pub fn load_efi_from_path(
     kernel_path: &str,
     initrd_path: Option<&str>,
-    cmdline: Option<&str>) -> Result {
+    cmdline: Option<&str>,
+) -> Result {
     // Get the loaded image protocol for the current image (BOOTX64.EFI)
     let loaded_image = boot::open_protocol_exclusive::<LoadedImage>(boot::image_handle())?;
 
@@ -128,10 +133,45 @@ pub fn load_efi_from_path(
         },
     )?;
 
+    let mut kernel_loaded_image_device =
+        boot::open_protocol_exclusive::<LoadedImage>(kernel_image_handle)?;
+
+    /*if let Some(initrd) = initrd_path {
+        if let Some(cmdline_str) = cmdline {
+            let options = CString::new(cmdline_str).unwrap();
+            let options_bytes = options.as_bytes_with_nul();
+        }
+    }*/
+
+    let mut options_str = "".to_owned();
+
+    if let Some(initrd) = initrd_path {
+        options_str += "initrd=";
+        options_str += &initrd.replace("/", "\\");
+        if cmdline.is_some() {
+            options_str += " ";
+        }
+    }
+
+    if let Some(cmdline_str) = cmdline {
+        options_str += cmdline_str;
+    }
+
+    println!("{}\n{:?}\n{:?}",options_str, initrd_path, cmdline);
+    let options = CString::new(options_str).unwrap();
+    //let options_bytes = options.as_bytes_with_nul();
+    let ptr: *const u8 = options.as_ptr() as *const u8;
+    let len: u32  = options.as_bytes().len() as u32;             // without null terminator
+    let len_with_nul = options.as_bytes_with_nul().len();
+
+    unsafe {
+        kernel_loaded_image_device.set_load_options(ptr, len);
+    }
+
     println!("{} image loaded, starting execution...", filename);
 
     // Start the kernel image
-    boot::start_image(kernel_image_handle)?;
+    //boot::start_image(kernel_image_handle)?;
 
     // If we reach here, the kernel returned (which might not be expected)
     Ok(())
@@ -196,7 +236,7 @@ pub fn load_kernel_image(
     if kernel_data.len() < HEADER_MAGIC_OFFSET + 4 {
         panic!("Kernel image too small");
     }
-    
+
     let hdr_magic = u32::from_le_bytes([
         kernel_data[HEADER_MAGIC_OFFSET],
         kernel_data[HEADER_MAGIC_OFFSET + 1],
@@ -221,15 +261,15 @@ let kernel_addr = boot::allocate_pages(
         pages,
     ).unwrap();
     println!("yay");
-    
+
     let kernel_entry = kernel_addr.as_ptr() as u64 + 0x200;
 
     // Verify we got the address we requested
     if kernel_entry != KERNEL_LOAD_ADDR {
-        println!("Failed to allocate kernel at requested address 0x{:x}, got 0x{:x}", 
+        println!("Failed to allocate kernel at requested address 0x{:x}, got 0x{:x}",
                KERNEL_LOAD_ADDR, kernel_entry);
     }
-    
+
     unsafe {
         ptr::copy_nonoverlapping(kernel_data.as_ptr(), KERNEL_LOAD_ADDR as *mut u8, kernel_data.len());
     }
@@ -260,13 +300,13 @@ let kernel_addr = boot::allocate_pages(
         boot::MemoryType::LOADER_DATA,
         boot_params_pages,
     )?;
-    
+
     // Verify we got the address we requested
     if boot_params_addr.as_ptr() as usize != BOOT_PARAMS_ADDR {
         panic!("Failed to allocate boot_params at requested address 0x{:x}, got 0x{:x}",
                BOOT_PARAMS_ADDR, boot_params_addr.as_ptr() as usize);
     }
-    
+
     let boot_params = BOOT_PARAMS_ADDR as *mut u8;
     unsafe {
         ptr::write_bytes(boot_params, 0, 4096);
@@ -308,23 +348,23 @@ let kernel_addr = boot::allocate_pages(
     // Convert UEFI memory map to E820 format
     let e820_entries = convert_memory_map_to_e820(&memory_map)
         .expect("Failed to convert memory map to E820 format");
-    
+
     // Validate the E820 map
     validate_e820_map(&e820_entries)
         .expect("Invalid E820 memory map");
-    
+
     // Print E820 map for debugging (optional)
     print_e820_map(&e820_entries);
-    
+
     // Install E820 map into boot_params structure
     unsafe {
         install_e820_map(boot_params, &e820_entries)
             .expect("Failed to install E820 map into boot_params");
     }
-    
+
     // Jump to kernel entry
     //let kernel_entry = KERNEL_LOAD_ADDR + 0x200; // Entry point offset for bzImage
-    
+
     // This is where the kernel takes over - we can't return from here
     unsafe {
         let entry_fn: extern "C" fn() -> ! = core::mem::transmute(kernel_entry as *const ());
@@ -336,36 +376,36 @@ let kernel_addr = boot::allocate_pages(
 fn read_file_to_vec(path: &str) -> Result<Vec<u8>> {
     // Get the loaded image protocol for the current image
     let loaded_image = boot::open_protocol_exclusive::<LoadedImage>(boot::image_handle()).unwrap();
-    
+
     // Get the device handle where this image was loaded from
     let device_handle = loaded_image.device().unwrap();
-    
+
     // Open the Simple File System protocol on the same device
     let mut sfs = boot::open_protocol_exclusive::<SimpleFileSystem>(device_handle).unwrap();
-    
+
     // Open the root directory
     let mut current_dir = sfs.open_volume().unwrap();
-    
+
     // Normalize path separators - replace forward slashes with backslashes
     let normalized_path = path.replace('/', "\\");
-    
+
     // Split the path and navigate to the correct directory
     let path_parts: Vec<&str> = normalized_path.split('\\')
         .filter(|part| !part.is_empty())
         .collect();
-    
+
     if path_parts.is_empty() {
         panic!("Empty file path: {}", path);
     }
-    
+
     let filename = path_parts.last().unwrap();
-    
+
     // Navigate through directories if path has subdirectories
     for &dir_name in &path_parts[..path_parts.len() - 1] {
         // Convert to UTF-16 string
         let mut dir_name_utf16 = [0u16; 256];
         let mut utf16_len = 0;
-        
+
         for ch in dir_name.chars() {
             if utf16_len >= 255 {
                 panic!("Directory name too long: {}", dir_name);
@@ -374,13 +414,13 @@ fn read_file_to_vec(path: &str) -> Result<Vec<u8>> {
             utf16_len += 1;
         }
         dir_name_utf16[utf16_len] = 0;
-        
+
         let dir_handle = current_dir.open(
             unsafe { CStr16::from_u16_with_nul_unchecked(&dir_name_utf16[..=utf16_len]) },
             FileMode::Read,
             FileAttribute::empty(),
         ).unwrap();
-        
+
         current_dir = match dir_handle.into_type()? {
             FileType::Dir(dir) => dir,
             FileType::Regular(_) => panic!("{} is not a directory", dir_name),
@@ -390,7 +430,7 @@ fn read_file_to_vec(path: &str) -> Result<Vec<u8>> {
     // Convert filename to UTF-16
     let mut filename_utf16 = [0u16; 256];
     let mut utf16_len = 0;
-    
+
     for ch in filename.chars() {
         if utf16_len >= 255 {
             panic!("Filename too long: {}", filename);
@@ -406,7 +446,7 @@ fn read_file_to_vec(path: &str) -> Result<Vec<u8>> {
         FileMode::Read,
         FileAttribute::empty(),
     ).unwrap();
-    
+
     let mut file = match handle.into_type()? {
         FileType::Regular(f) => f,
         FileType::Dir(_) => panic!("{} is not a regular file", filename),
@@ -416,33 +456,33 @@ fn read_file_to_vec(path: &str) -> Result<Vec<u8>> {
     let mut info_buffer = [0u8; 200];
     let file_info = file.get_info::<FileInfo>(&mut info_buffer).expect("Failed to get file info");
     let file_size = file_info.file_size() as usize;
-    
+
     if file_size == 0 {
         panic!("File {} is empty", filename);
     }
-    
+
     // Read file into vector
     let mut buf = Vec::with_capacity(file_size);
     let mut total_read = 0;
-    
+
     while total_read < file_size {
         let mut chunk = [0u8; 4096];
         let bytes_to_read = core::cmp::min(chunk.len(), file_size - total_read);
         let bytes_read = file.read(&mut chunk[..bytes_to_read]).unwrap();
-        
+
         if bytes_read == 0 {
             break; // EOF reached
         }
-        
+
         buf.extend_from_slice(&chunk[..bytes_read]);
         total_read += bytes_read;
     }
-    
+
     if total_read != file_size {
-        panic!("Failed to read complete file {}: expected {} bytes, got {} bytes", 
+        panic!("Failed to read complete file {}: expected {} bytes, got {} bytes",
                filename, file_size, total_read);
     }
-    
+
     Ok(buf)
 }
 

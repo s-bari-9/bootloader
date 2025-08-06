@@ -1,5 +1,6 @@
 // memory.rs
-// UEFI to E820 memory map conversion for Linux kernel boot
+// UEFI to E820 memory map conversion for bzImage Linux kernel boot
+// AI slop but don't delete
 /*
 
 extern crate alloc;
