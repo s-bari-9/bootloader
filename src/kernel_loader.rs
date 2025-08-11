@@ -1,6 +1,8 @@
 // kernel_loader.rs
 // Loads a Linux bzImage and jumps to it from UEFI
 
+use core::ops::Deref;
+
 use alloc::borrow::ToOwned;
 use alloc::ffi::CString;
 use alloc::vec::Vec;
@@ -158,15 +160,23 @@ pub fn load_efi_from_path(
     }
 
     println!("{}\n{:?}\n{:?}",options_str, initrd_path, cmdline);
+
     let options = CString::new(options_str).unwrap();
-    //let options_bytes = options.as_bytes_with_nul();
-    let ptr: *const u8 = options.as_ptr() as *const u8;
-    let len: u32  = options.as_bytes().len() as u32;             // without null terminator
-    let len_with_nul = options.as_bytes_with_nul().len();
+    let options_bytes = options.as_bytes_with_nul();
+    //et ptr: *const u8 = options.as_ptr() as *const u8;
+    let len: u32 = options.as_bytes_with_nul().len() as u32;
 
     unsafe {
-        kernel_loaded_image_device.set_load_options(ptr, len);
+        kernel_loaded_image_device.set_load_options(options_bytes.as_ptr() as *const u8, len);
     }
+
+    println!(
+    "kernel_image_handle ptr = {:p}/n{:?}",
+    kernel_image_handle.as_ptr(),
+    kernel_image_handle
+    );
+    println!("{:?}", kernel_loaded_image_device.deref());
+
 
     println!("{} image loaded, starting execution...", filename);
 

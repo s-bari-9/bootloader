@@ -14,10 +14,6 @@ use uefi::boot::{self, SearchType};
 use uefi::prelude::*;
 use uefi::println;
 use uefi::proto::console::text::Input;
-use uefi::proto::device_path::text::{AllowShortcuts, DevicePathToText, DisplayOnly};
-use uefi::proto::loaded_image::LoadedImage;
-use uefi::proto::media::file::{File, FileAttribute, FileInfo, FileMode, FileType};
-use uefi::proto::media::fs::SimpleFileSystem;
 use uefi::{CStr16, Identify, Result};
 
 #[entry]
@@ -38,25 +34,6 @@ fn main() -> Status {
         if let Some(path_linux) = entry.linux {
             load_efi_from_path(&path_linux, entry.initrd.as_deref(), entry.options.as_deref()).unwrap();
         }
-            /*match load_kernel_image(
-                &path_linux,
-                entry.initrd.as_deref(),
-                entry.options.as_deref(),
-            )
-            {
-                Ok(val) => println!("Success: {:?}", val),
-                Err(e) => {
-                    println!("❌ Failed to load kernel image:");
-        println!("   kernel: {:?}", path_linux);
-        println!("   initrd: {:?}", entry.initrd);
-        println!("   options: {:?}", entry.options);
-        println!("   error: {}", e);
-                },
-            }
-        } else if let Some(path_efi) = entry.efi {
-            load_efi_from_path(&path_efi).unwrap();
-        }*/
-        //load_efi_from_path(&selected).unwrap();
     }
 
     boot::stall(100_000_000);
