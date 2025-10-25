@@ -148,7 +148,7 @@ pub fn load_efi_from_path(
     let mut options_str = "".to_owned();
 
     if let Some(initrd) = initrd_path {
-        options_str += "initrd=";
+        options_str += "console=ttyS0,115200 earlyprintk=efi,keep initrd=";
         options_str += &initrd.replace("/", "\\");
         if cmdline.is_some() {
             options_str += " ";
@@ -161,8 +161,9 @@ pub fn load_efi_from_path(
 
     println!("{}\n{:?}\n{:?}",options_str, initrd_path, cmdline);
 
-    let options = CString::new(options_str).unwrap();
-    let options_bytes = options.as_bytes_with_nul();
+    let options = CString::new(options_str.clone()).unwrap();
+    //let options_bytes = options.as_bytes_with_nul();
+    let mut options_bytes : Vec<u16> = options_str.encode_utf16().collect();
     //et ptr: *const u8 = options.as_ptr() as *const u8;
     let len: u32 = options.as_bytes_with_nul().len() as u32;
 
@@ -181,7 +182,7 @@ pub fn load_efi_from_path(
     println!("{} image loaded, starting execution...", filename);
 
     // Start the kernel image
-    //boot::start_image(kernel_image_handle)?;
+    boot::start_image(kernel_image_handle)?;
 
     // If we reach here, the kernel returned (which might not be expected)
     Ok(())

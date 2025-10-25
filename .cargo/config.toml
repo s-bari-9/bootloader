@@ -1,5 +1,7 @@
 [build]
 target = "x86_64-unknown-uefi"
+#[build]
+#target = "x86_64-unknown-uefi.json"
 
 [target.x86_64-unknown-uefi]
 runner = "extra/efirunner.sh"
