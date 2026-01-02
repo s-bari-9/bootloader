@@ -1,0 +1,210 @@
+import {
+    Button, GridBox, HorizontalBox, ListView, ScrollView,
+    StandardButton, VerticalBox
+} from "std-widgets.slint";
+import "../NotoSans-Regular.ttf";
+
+export struct BootEntryData {
+    title: string,
+    version: string,
+    options: string,
+    has-version: bool,
+    has-options: bool,
+}
+
+export component Demo inherits Window {
+    in-out property <[BootEntryData]> boot-entries;
+    in-out property <int> selected-index: 0;
+    in-out property <string> firmware-vendor;
+    in-out property <string> firmware-version;
+    in-out property <string> uefi-version;
+    in-out property <bool> secure-boot;
+    
+    callback boot-selected(int);
+    callback cancel-boot();
+    
+    default-font-size: 20px;
+    default-font-family: "Noto Sans";
+    
+    // Handle keyboard input for navigation
+    forward-focus: focus-scope;
+    focus-scope := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.UpArrow && selected-index > 0) {
+                selected-index -= 1;
+                accept
+            } else if (event.text == Key.DownArrow && selected-index < boot-entries.length - 1) {
+                selected-index += 1;
+                accept
+            } else if (event.text == Key.Return) {
+                boot-selected(selected-index);
+                accept
+            } else if (event.text == Key.Escape) {
+                cancel-boot();
+                accept
+            } else {
+                reject
+            }
+        }
+    }
+    
+    VerticalBox {
+        padding: 20px;
+        spacing: 15px;
+        
+        // Header
+        Text {
+            text: "UEFI Bootloader";
+            horizontal-alignment: center;
+            font-size: 36px;
+            font-weight: 700;
+            color: #2196F3;
+        }
+        
+        // System Info Box
+        Rectangle {
+            height: 120px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            
+            GridBox {
+                padding: 15px;
+                spacing: 8px;
+                
+                Row {
+                    Text { 
+                        text: "Firmware:"; 
+                        font-weight: 600;
+                        horizontal-alignment: right;
+                    }
+                    Text { 
+                        text: firmware-vendor + " " + firmware-version;
+                        col: 1;
+                    }
+                }
+                Row {
+                    Text { 
+                        text: "UEFI Version:"; 
+                        font-weight: 600;
+                        horizontal-alignment: right;
+                    }
+                    Text { 
+                        text: uefi-version;
+                        col: 1;
+                    }
+                }
+                Row {
+                    Text { 
+                        text: "Secure Boot:"; 
+                        font-weight: 600;
+                        horizontal-alignment: right;
+                    }
+                    Text { 
+                        text: secure-boot ? "Enabled" : "Disabled";
+                        color: secure-boot ? #4CAF50 : #F44336;
+                        col: 1;
+                    }
+                }
+            }
+        }
+        
+        // Instructions
+        Text {
+            text: "Select a boot entry using arrow keys and press Enter to boot, or ESC to cancel";
+            horizontal-alignment: center;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        // Boot Entries List
+        ScrollView {
+            vertical-stretch: 1;
+            
+            VerticalLayout {
+                spacing: 8px;
+                padding: 10px;
+                
+                for entry[idx] in boot-entries: Rectangle {
+                    height: entry.has-version || entry.has-options ? 90px : 60px;
+                    background: idx == selected-index ? #E3F2FD : #ffffff;
+                    border-radius: 6px;
+                    border-width: idx == selected-index ? 3px : 1px;
+                    border-color: idx == selected-index ? #2196F3 : #ddd;
+                    
+                    TouchArea {
+                        clicked => {
+                            selected-index = idx;
+                            boot-selected(idx);
+                        }
+                    }
+                    
+                    VerticalLayout {
+                        padding: 12px;
+                        spacing: 4px;
+                        
+                        HorizontalLayout {
+                            spacing: 10px;
+                            
+                            if idx == selected-index: Text {
+                                text: "▶";
+                                font-size: 24px;
+                                color: #2196F3;
+                                vertical-alignment: center;
+                            }
+                            
+                            Text {
+                                text: entry.title;
+                                font-size: 22px;
+                                font-weight: idx == selected-index ? 600 : 400;
+                                color: idx == selected-index ? #1976D2 : #333;
+                                vertical-alignment: center;
+                            }
+                        }
+                        
+                        if entry.has-version: Text {
+                            text: "Version: " + entry.version;
+                            font-size: 16px;
+                            color: #666;
+                            padding-left: idx == selected-index ? 34px : 0px;
+                        }
+                        
+                        if entry.has-options: Text {
+                            text: "Options: " + entry.options;
+                            font-size: 14px;
+                            color: #888;
+                            padding-left: idx == selected-index ? 34px : 0px;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Action Buttons
+        HorizontalBox {
+            alignment: center;
+            spacing: 15px;
+            
+            Button {
+                text: "Boot Selected";
+                clicked => {
+                    boot-selected(selected-index);
+                }
+            }
+            
+            Button {
+                text: "Cancel";
+                clicked => {
+                    cancel-boot();
+                }
+            }
+        }
+        
+        // Footer
+        Text {
+            text: "Entries: " + boot-entries.length;
+            horizontal-alignment: center;
+            font-size: 14px;
+            color: #999;
+        }
+    }
+}

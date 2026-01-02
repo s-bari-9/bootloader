@@ -1,0 +1,289 @@
+import {
+    Button, GridBox, HorizontalBox, ListView, ScrollView,
+    StandardButton, VerticalBox
+} from "std-widgets.slint";
+import "../NotoSans-Regular.ttf";
+
+export struct BootEntryData {
+    title: string,
+    version: string,
+    options: string,
+    has-version: bool,
+    has-options: bool,
+}
+
+export component Demo inherits Window {
+    in-out property <[BootEntryData]> boot-entries;
+    in-out property <int> selected-index: 0;
+    in-out property <string> firmware-vendor;
+    in-out property <string> firmware-version;
+    in-out property <string> uefi-version;
+    in-out property <bool> secure-boot;
+    
+    callback boot-selected(int);
+    callback cancel-boot();
+    
+    default-font-size: 18px;
+    default-font-family: "Noto Sans";
+    background: #0a0e27;
+    
+    // Handle keyboard input for navigation
+    forward-focus: focus-scope;
+    focus-scope := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.UpArrow && selected-index > 0) {
+                selected-index -= 1;
+                accept
+            } else if (event.text == Key.DownArrow && selected-index < boot-entries.length - 1) {
+                selected-index += 1;
+                accept
+            } else if (event.text == Key.Return) {
+                boot-selected(selected-index);
+                accept
+            } else if (event.text == Key.Escape) {
+                cancel-boot();
+                accept
+            } else {
+                reject
+            }
+        }
+    }
+    
+    VerticalBox {
+        padding: 30px;
+        spacing: 20px;
+        
+        // Header
+        Rectangle {
+            height: 80px;
+            background: @linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            
+            VerticalLayout {
+                alignment: center;
+                
+                Text {
+                    text: "UEFI Bootloader";
+                    horizontal-alignment: center;
+                    font-size: 42px;
+                    font-weight: 700;
+                    color: #ffffff;
+                }
+            }
+        }
+        
+        // System Info Box
+        Rectangle {
+            height: 140px;
+            background: #1a1f3a;
+            border-radius: 10px;
+            border-width: 2px;
+            border-color: #2d3561;
+            
+            GridBox {
+                padding: 20px;
+                spacing: 12px;
+                
+                Row {
+                    Text { 
+                        text: "Firmware:"; 
+                        font-weight: 700;
+                        font-size: 16px;
+                        horizontal-alignment: right;
+                        color: #a0aec0;
+                    }
+                    Text { 
+                        text: firmware-vendor + " " + firmware-version;
+                        font-size: 16px;
+                        color: #e2e8f0;
+                        col: 1;
+                    }
+                }
+                Row {
+                    Text { 
+                        text: "UEFI Version:"; 
+                        font-weight: 700;
+                        font-size: 16px;
+                        horizontal-alignment: right;
+                        color: #a0aec0;
+                    }
+                    Text { 
+                        text: uefi-version;
+                        font-size: 16px;
+                        color: #e2e8f0;
+                        col: 1;
+                    }
+                }
+                Row {
+                    Text { 
+                        text: "Secure Boot:"; 
+                        font-weight: 700;
+                        font-size: 16px;
+                        horizontal-alignment: right;
+                        color: #a0aec0;
+                    }
+                    Text { 
+                        text: secure-boot ? "✓ Enabled" : "✗ Disabled";
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: secure-boot ? #48bb78 : #f56565;
+                        col: 1;
+                    }
+                }
+            }
+        }
+        
+        // Instructions
+        Text {
+            text: "↑ ↓ Navigate  •  Enter Boot  •  ESC Cancel";
+            horizontal-alignment: center;
+            font-size: 15px;
+            font-weight: 500;
+            color: #718096;
+        }
+        
+        // Boot Entries List
+        Rectangle {
+            vertical-stretch: 1;
+            background: #1a1f3a;
+            border-radius: 10px;
+            border-width: 2px;
+            border-color: #2d3561;
+            
+            ScrollView {
+                VerticalLayout {
+                    spacing: 10px;
+                    padding: 15px;
+                    
+                    for entry[idx] in boot-entries: Rectangle {
+                        height: entry.has-version || entry.has-options ? 100px : 70px;
+                        background: idx == selected-index ? 
+                            @linear-gradient(135deg, #667eea 0%, #764ba2 100%) : 
+                            #0f1629;
+                        border-radius: 8px;
+                        border-width: 2px;
+                        border-color: idx == selected-index ? #667eea : #2d3561;
+                        
+                        // Glow effect for selected item
+                        drop-shadow-blur: idx == selected-index ? 15px : 0px;
+                        drop-shadow-color: idx == selected-index ? #667eea80 : transparent;
+                        
+                        TouchArea {
+                            clicked => {
+                                selected-index = idx;
+                                boot-selected(idx);
+                            }
+                        }
+                        
+                        VerticalLayout {
+                            padding: 15px;
+                            spacing: 6px;
+                            
+                            HorizontalLayout {
+                                spacing: 12px;
+                                
+                                if idx == selected-index: Text {
+                                    text: "▶";
+                                    font-size: 28px;
+                                    color: #ffffff;
+                                    vertical-alignment: center;
+                                }
+                                
+                                Text {
+                                    text: entry.title;
+                                    font-size: 24px;
+                                    font-weight: idx == selected-index ? 700 : 500;
+                                    color: idx == selected-index ? #ffffff : #cbd5e0;
+                                    vertical-alignment: center;
+                                }
+                            }
+                            
+                            if entry.has-version: Text {
+                                text: "Version: " + entry.version;
+                                font-size: 15px;
+                                color: idx == selected-index ? #e2e8f0 : #718096;
+                                //padding-left: idx == selected-index ? 40px : 0px;
+                            }
+                            
+                            if entry.has-options: Text {
+                                text: "Options: " + entry.options;
+                                font-size: 14px;
+                                color: idx == selected-index ? #cbd5e0 : #4a5568;
+                                //padding-left: idx == selected-index ? 40px : 0px;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Action Buttons
+        HorizontalBox {
+            alignment: center;
+            spacing: 20px;
+            height: 50px;
+            
+            Rectangle {
+                width: 180px;
+                height: 50px;
+                background: @linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+                border-radius: 8px;
+                drop-shadow-blur: 10px;
+                drop-shadow-color: #48bb7860;
+                
+                TouchArea {
+                    clicked => {
+                        boot-selected(selected-index);
+                    }
+                }
+                
+                Text {
+                    text: "⚡ Boot Selected";
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: #ffffff;
+                }
+            }
+            
+            Rectangle {
+                width: 140px;
+                height: 50px;
+                background: #2d3748;
+                border-radius: 8px;
+                border-width: 2px;
+                border-color: #4a5568;
+                
+                TouchArea {
+                    clicked => {
+                        cancel-boot();
+                    }
+                }
+                
+                Text {
+                    text: "✕ Cancel";
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #e2e8f0;
+                }
+            }
+        }
+        
+        // Footer
+        HorizontalBox {
+            alignment: center;
+            spacing: 15px;
+            
+            Text {
+                text: "📋 " + boot-entries.length + " entries available";
+                horizontal-alignment: center;
+                font-size: 14px;
+                font-weight: 500;
+                color: #718096;
+            }
+        }
+    }
+}
