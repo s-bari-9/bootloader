@@ -8,9 +8,9 @@ Expected layout on the EFI System Partition (XBOOTLDR partition is **NOT** suppo
 
 ```
 /EFI/BOOT/BOOTX64.EFI         <= This bootloader
-/EFI/BOOT/KERNEL.EFI          <= Hello world file for testing bootloader
+/EFI/BOOT/KERNEL.EFI          <= Hello world kernel for testing bootloader
 /loader/loader.conf           <= Global config (TODO)
-/loader/entries/*.conf       <= Per-entry configs
+/loader/entries/*.conf        <= Per-entry configs
 ````
 
 Boot entries are supported as in [UAPI specifications](https://uapi-group.org/specifications/specs/boot_loader_specification/#type-1-boot-loader-specification-entries).
@@ -64,7 +64,7 @@ runner = "extra/efirunner.sh"
 linker = "rust-lld"
 ```
 
-* Test in qemu: `efirunner.sh` does this.
+* Test in qemu: `cargo run`
 
 ## License
 
