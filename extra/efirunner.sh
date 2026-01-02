@@ -7,10 +7,17 @@ ESP_DIR="esp/EFI/BOOT"
 
 # Create the directory for the ESP
 #mkdir -p "$ESP_DIR"
+<<<<<<< HEAD
 rm -f "$ESP_DIR/BOOTX64.EFI"
 cp "$TARGET_EFI" "$ESP_DIR/BOOTX64.EFI" 
 #cargo build --bin kernel
 #cp $(dirname "$TARGET_EFI")/kernel.efi "$ESP_DIR/KERNEL.EFI"
+=======
+rm -f "$ESP_DIR/BOOTX64.EFI" "$ESP_DIR/KERNEL.EFI"
+cp "$TARGET_EFI" "$ESP_DIR/BOOTX64.EFI" 
+cargo build --bin kernel
+cp $(dirname "$TARGET_EFI")/kernel.efi "$ESP_DIR/KERNEL.EFI"
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
 
 # Create a 64MB FAT-formatted disk image
 #dd if=/dev/zero of="$ESP_IMG" bs=1M count=64 status=none

@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+// loader_entries.rs
+// Module to read systemd-boot style entries from ESP
+
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
 mod fs_handler;
 use alloc::fmt::format;
 use alloc::string::String;
@@ -6,6 +12,10 @@ use core::str;
 use uefi::proto::media::file::{File, FileAttribute, FileMode, FileType};
 use uefi::proto::media::fs::SimpleFileSystem;
 use uefi::{prelude::*, println};
+<<<<<<< HEAD
+=======
+//use uefi::proto::media::fs::Directory;
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
 use crate::alloc::string::ToString;
 use uefi::CStr16;
 use uefi::Result;
@@ -42,27 +52,67 @@ impl BootEntry {
 
 /// Reads all .conf files under /loader/entries and returns parsed BootEntry list.
 pub fn read_loader_entries() -> Result<Vec<BootEntry>> {
+<<<<<<< HEAD
     let loaded_image = boot::open_protocol_exclusive::<LoadedImage>(boot::image_handle())?;
     let device_handle = loaded_image.device();
     let mut sfs = boot::open_protocol_exclusive::<SimpleFileSystem>(device_handle.unwrap())?;
     let mut folder = sfs.open_volume()?;
 
     //Navigate to path
+=======
+    //st: &SystemTable<Boot>
+    // Open the SimpleFileSystem for the loaded image's device
+    /*let loaded_image = st.boot_services().handle_protocol::<uefi::proto::loaded_image::LoadedImage>(
+    st.boot_services().image_handle())?
+    .interface;*/
+    let loaded_image = boot::open_protocol_exclusive::<LoadedImage>(boot::image_handle())?;
+    println!("Line 1: {:?}", loaded_image);
+    //let device = unsafe { (*loaded_image.get()).device() };
+    let device_handle = loaded_image.device();
+    //println!("Line2");
+    /*let fs = st.boot_services().handle_protocol::<SimpleFileSystem>(device.unwrap())?
+    .interface;*/
+    let mut sfs = boot::open_protocol_exclusive::<SimpleFileSystem>(device_handle.unwrap())?;
+    //let mut root = unsafe { (*fs.get()).open_volume()? };
+
+    // Open the root directory
+    let mut folder = sfs.open_volume()?;
+    println!("Line3");
+
+    // Navigate to \loader\entries for conf detection
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
     open_dir(&mut folder, "loader")?;
     open_dir(&mut folder, "entries")?;
     let buf: &mut [u8] = &mut [0; 10000];
 
     let mut entries = Vec::new();
     loop {
+<<<<<<< HEAD
+=======
+        println!("I ahev entered the loop");
+        //let x = folder.read_entry(buf);
+        //println!("Rsult = {x:#?}")
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
         match folder.read_entry(buf) {
             Err(e) => println!("Error: {e}"),
             core::prelude::v1::Ok(None) => break,
             core::prelude::v1::Ok(Some(file_info)) => {
                 let name = file_info.file_name();
+<<<<<<< HEAD
                 if !name.to_string().ends_with(".conf") {
                     continue;
                 }
                 let file_handle = folder.open(
+=======
+                println!("should execute rn");
+                if !name.to_string().ends_with(".conf") {
+                    println!("Should not executed rihgtnow");
+                    continue;
+                }
+                // Open file
+                let file_handle = folder.open(
+                    //unsafe { CStr16::from_u16_with_nul_unchecked(&to_utf16(&name)) },
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
                     &name,
                     FileMode::Read,
                     FileAttribute::empty(),
@@ -76,7 +126,14 @@ pub fn read_loader_entries() -> Result<Vec<BootEntry>> {
                 file.read(&mut buf)?;
                 if let Ok(text) = str::from_utf8(&buf) {
                     let entry = parse_conf(text);
+<<<<<<< HEAD
                     entries.push(entry);
+=======
+                    // Ensure mandatory fields
+                    //if !entry.title.is_empty() && !entry.linux.is_empty() {
+                    entries.push(entry);
+                    //}
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
                 }
             }
         }
@@ -88,6 +145,10 @@ pub fn read_loader_entries() -> Result<Vec<BootEntry>> {
         "EFI\\Apple\\Boot\\boot.efi",
         "shellx64.efi",
     ] {
+<<<<<<< HEAD
+=======
+        //if let Ok(file_handle) = try_open_path(&mut root, path) {
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
         if try_open_path(&mut root, path).unwrap() {
             entries.push(BootEntry {
                 title: format(format_args!("Detected Boot Entry: {}", path)),
@@ -151,7 +212,11 @@ pub fn try_open_path(root: &mut Directory, path: &str) -> Result<bool> {
         Ok(file_handle) => {
             match file_handle.into_type()? {
                 FileType::Regular(_) => Ok(true),
+<<<<<<< HEAD
                 FileType::Dir(_) => Ok(false),
+=======
+                FileType::Dir(_) => Ok(false), // It's a dir, not a file
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
             }
         }
         Err(e) if e.status() == Status::NOT_FOUND => Ok(false),
@@ -159,7 +224,11 @@ pub fn try_open_path(root: &mut Directory, path: &str) -> Result<bool> {
     }
 }
 
+<<<<<<< HEAD
 /// Open a subdir
+=======
+/// Open (and move into) a subdirectory by name
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
 fn open_dir(dir: &mut Directory, name: &str) -> Result<()> {
     let mut name_utf16 = [0u16; 256];
     let mut i = 0;
@@ -178,16 +247,24 @@ fn open_dir(dir: &mut Directory, name: &str) -> Result<()> {
     )?;
     let subdir = match handle.into_type()? {
         FileType::Dir(d) => d,
+<<<<<<< HEAD
         x => {
             println!("{:?}", x);
             return Err(uefi::Error::new(uefi::Status::NOT_FOUND, ()))
         },
+=======
+        _ => return Err(uefi::Error::new(uefi::Status::NOT_FOUND, ())),
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
     };
     *dir = subdir;
     Ok(())
 }
 
+<<<<<<< HEAD
 /// Parse .conf
+=======
+/// Parse a single .conf text into BootEntry
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
 fn parse_conf(text: &str) -> BootEntry {
     let mut entry = BootEntry::new();
     for line in text.lines() {

@@ -1,4 +1,5 @@
 [package]
+<<<<<<< HEAD
 name = "uefi-demo"
 version = "1.15.0"
 license = "GPL3"
@@ -23,3 +24,23 @@ slint-build = "1.14"
 [dependencies]
 minipng = "=0.1.1"
 uefi = "=0.33.0"
+=======
+name = "bootloader"
+version = "0.0.1"
+edition = "2024"
+default-run = "bootloader"
+
+[dependencies]
+#uefi = "0.35.0"
+#uefi-services = "0.26"
+
+[dependencies.uefi]
+version = "0.35.0"
+features = ["panic_handler", "alloc", "global_allocator"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+>>>>>>> c68e60fbd52eb559c1924bee7c9ad2522ba48776
